@@ -43,6 +43,14 @@ enum class GameMode(
     val isPopular: Boolean = false,
     val description: String = ""
 ) {
+    MICRO(
+        displayName = "Quick 10 Match",
+        entryFee = 10.0,
+        prizePool = 18.0,
+        durationSeconds = 45,
+        isPopular = true,
+        description = "₹10 Real PvP Challenge"
+    ),
     NORMAL(
         displayName = "Normal Mode",
         entryFee = 50.0,
@@ -87,21 +95,23 @@ enum class MatchStatus {
 
 data class GameMatch(
     val id: String = UUID.randomUUID().toString().take(8),
-    val mode: GameMode = GameMode.NORMAL,
+    val matchCode: String = "", // 6-digit numeric Match ID (e.g. "729401")
+    val creatorId: String = "",
+    val mode: GameMode = GameMode.MICRO,
     val player1Id: String,
     val player1Name: String,
     val player1PlayerId: String,
     val player1Avatar: String,
-    val player2Id: String,
-    val player2Name: String,
-    val player2PlayerId: String,
-    val player2Avatar: String,
+    val player2Id: String? = null,
+    val player2Name: String? = null,
+    val player2PlayerId: String? = null,
+    val player2Avatar: String? = null,
     val player1Score: Int = 0,
     val player2Score: Int = 0,
     val winnerId: String? = null,
     val status: MatchStatus = MatchStatus.WAITING,
-    val entryFee: Double = 50.0,
-    val prizeAmount: Double = 90.0,
+    val entryFee: Double = 10.0,
+    val prizeAmount: Double = 18.0,
     val timestamp: Long = System.currentTimeMillis(),
     val refundIssued: Boolean = false
 )
@@ -112,6 +122,7 @@ enum class TransactionType {
     MATCH_ENTRY,
     MATCH_PRIZE,
     REFUND,
+    SIGNUP_BONUS,
     ADMIN_ADJUSTMENT
 }
 

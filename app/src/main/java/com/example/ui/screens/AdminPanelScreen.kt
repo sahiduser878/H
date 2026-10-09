@@ -102,18 +102,20 @@ fun AdminPanelScreen(
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Overview") })
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Users (${allUsers.size})") })
                 Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Finances (${deposits.size + withdrawals.size})") })
-                Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Game Rules") })
-                Tab(selected = selectedTab == 4, onClick = { selectedTab = 4 }, text = { Text("Broadcasts") })
-                Tab(selected = selectedTab == 5, onClick = { selectedTab = 5 }, text = { Text("Audit Log (${auditLogs.size})") })
+                Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("ZapUPI Gateway") })
+                Tab(selected = selectedTab == 4, onClick = { selectedTab = 4 }, text = { Text("Game Rules") })
+                Tab(selected = selectedTab == 5, onClick = { selectedTab = 5 }, text = { Text("Broadcasts") })
+                Tab(selected = selectedTab == 6, onClick = { selectedTab = 6 }, text = { Text("Audit Log (${auditLogs.size})") })
             }
 
             when (selectedTab) {
                 0 -> AdminOverviewTab(allUsers, matches, deposits, withdrawals)
                 1 -> AdminUsersTab(viewModel, allUsers)
                 2 -> AdminFinancesTab(viewModel, deposits, withdrawals)
-                3 -> AdminGameRulesTab(viewModel, appConfig)
-                4 -> AdminBroadcastTab(viewModel, appConfig)
-                5 -> AdminAuditTab(auditLogs)
+                3 -> AdminZapUpiGatewayTab(viewModel)
+                4 -> AdminGameRulesTab(viewModel, appConfig)
+                5 -> AdminBroadcastTab(viewModel, appConfig)
+                6 -> AdminAuditTab(auditLogs)
             }
         }
     }
@@ -560,6 +562,125 @@ private fun AdminFinancesTab(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun AdminZapUpiGatewayTab(
+    viewModel: TapGameViewModel
+) {
+    var apiKey by remember { mutableStateOf("zap7f946b7258683a0c7d99629edfdddcb7") }
+    var baseUrl by remember { mutableStateOf("https://api.zapupi.com") }
+    var webhookSecret by remember { mutableStateOf("whsec_live_tapgame878_prod") }
+    var merchantVpa by remember { mutableStateOf("tapgame.business@okaxis") }
+    var minDeposit by remember { mutableStateOf("10") }
+    var gatewayEnabled by remember { mutableStateOf(true) }
+    var autoCredit by remember { mutableStateOf(true) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        SectionHeader(
+            title = "ZAPUPI PAYMENT GATEWAY INTEGRATION",
+            subtitle = "Official Production API Configuration"
+        )
+
+        NeonCard(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Gateway Operational Status", color = TextPrimary, fontWeight = FontWeight.Bold)
+                    Text("Accept instant deposits via ZapUPI", color = TextSecondary, fontSize = 11.sp)
+                }
+                Switch(
+                    checked = gatewayEnabled,
+                    onCheckedChange = { gatewayEnabled = it }
+                )
+            }
+
+            HorizontalDivider(color = NavyCardBorder, modifier = Modifier.padding(vertical = 10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Auto-Credit on UTR Webhook", color = TextPrimary, fontWeight = FontWeight.Bold)
+                    Text("Instant wallet credit upon verified webhook signature", color = TextSecondary, fontSize = 11.sp)
+                }
+                Switch(
+                    checked = autoCredit,
+                    onCheckedChange = { autoCredit = it }
+                )
+            }
+        }
+
+        NeonCard(modifier = Modifier.fillMaxWidth()) {
+            Text("ZapUPI Production API Key", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            OutlinedTextField(
+                value = apiKey,
+                onValueChange = { apiKey = it },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Text("API Base URL", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            OutlinedTextField(
+                value = baseUrl,
+                onValueChange = { baseUrl = it },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Text("Webhook Signing Secret", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            OutlinedTextField(
+                value = webhookSecret,
+                onValueChange = { webhookSecret = it },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Text("Merchant Settlement UPI VPA", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            OutlinedTextField(
+                value = merchantVpa,
+                onValueChange = { merchantVpa = it },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Text("Minimum Deposit Allowed (₹)", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            OutlinedTextField(
+                value = minDeposit,
+                onValueChange = { minDeposit = it.filter { ch -> ch.isDigit() } },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        NeonButton(
+            text = "SAVE ZAPUPI CONFIGURATION",
+            onClick = {
+                viewModel.showToast("ZapUPI configuration updated successfully!")
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 

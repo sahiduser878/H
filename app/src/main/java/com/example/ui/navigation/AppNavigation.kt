@@ -10,6 +10,9 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -72,11 +75,23 @@ fun TapGameApp(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (showBottomBar) {
+                // Glassmorphic translucent Navigation Bar
                 NavigationBar(
                     modifier = Modifier
                         .navigationBarsPadding()
-                        .border(1.dp, NavyCardBorder, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                    containerColor = NavySurface,
+                        .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                        .border(
+                            width = 1.2.dp,
+                            brush = Brush.linearGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.35f),
+                                    NeonCyan.copy(alpha = 0.35f),
+                                    NavyCardBorder
+                                )
+                            ),
+                            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                        ),
+                    containerColor = NavySurface.copy(alpha = 0.85f),
                     contentColor = NeonCyan
                 ) {
                     MainTab.values().forEach { tab ->
@@ -294,6 +309,10 @@ fun TapGameApp(
                         },
                         onNavigateToWithdrawal = {
                             currentScreen = AppScreen.WITHDRAWAL
+                        },
+                        onLogout = {
+                            currentTab = MainTab.HOME
+                            currentScreen = AppScreen.LOGIN
                         }
                     )
                 }

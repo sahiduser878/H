@@ -111,8 +111,8 @@ fun GameHistoryScreen(
                         val isP1 = match.player1Id == user?.id
                         val myScore = if (isP1) match.player1Score else match.player2Score
                         val oppScore = if (isP1) match.player2Score else match.player1Score
-                        val oppName = if (isP1) match.player2Name else match.player1Name
-                        val oppAvatar = if (isP1) match.player2Avatar else match.player1Avatar
+                        val oppName = (if (isP1) match.player2Name else match.player1Name) ?: "Opponent"
+                        val oppAvatar = (if (isP1) match.player2Avatar else match.player1Avatar) ?: "2"
                         val won = match.winnerId == user?.id
                         val tie = match.winnerId == null
 
@@ -300,6 +300,7 @@ fun TransactionHistoryScreen(
                                                 TransactionType.MATCH_PRIZE -> Icons.Default.EmojiEvents
                                                 TransactionType.MATCH_ENTRY -> Icons.Default.SportsEsports
                                                 TransactionType.REFUND -> Icons.Default.Replay
+                                                TransactionType.SIGNUP_BONUS -> Icons.Default.CardGiftcard
                                                 TransactionType.ADMIN_ADJUSTMENT -> Icons.Default.Balance
                                             },
                                             contentDescription = null,

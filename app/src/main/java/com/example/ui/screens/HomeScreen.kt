@@ -109,7 +109,7 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.width(6.dp))
 
                         Text(
-                            text = "${user?.availableBalance?.toInt() ?: 1250}",
+                            text = "${user?.availableBalance?.toInt() ?: 10}",
                             color = TextPrimary,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold
@@ -244,7 +244,7 @@ fun HomeScreen(
                         Text("Total Games", color = TextSecondary, fontSize = 11.sp)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "${user?.totalGames ?: 12}",
+                            text = "${user?.totalGames ?: 0}",
                             color = TextPrimary,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Black
@@ -269,7 +269,7 @@ fun HomeScreen(
                         Text("Won", color = TextSecondary, fontSize = 11.sp)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "${user?.matchesWon ?: 8}",
+                            text = "${user?.matchesWon ?: 0}",
                             color = TextPrimary,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Black
@@ -294,7 +294,7 @@ fun HomeScreen(
                         Text("Win Rate", color = TextSecondary, fontSize = 11.sp)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "${user?.winRate ?: 66}%",
+                            text = "${user?.winRate ?: 0}%",
                             color = TextPrimary,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Black
@@ -373,7 +373,7 @@ fun HomeScreen(
                         .height(130.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .clickable {
-                            viewModel.startMatchmaking(GameMode.NORMAL) {
+                            viewModel.startMatchmaking(GameMode.MICRO) {
                                 onNavigateToMatchmaking()
                             }
                         }

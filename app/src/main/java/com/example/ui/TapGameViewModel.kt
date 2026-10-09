@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.model.*
 import com.example.data.repository.TapGameRepository
+import com.example.ui.theme.AppThemeColor
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -15,6 +16,7 @@ class TapGameViewModel(
     val allUsers = repository.allUsers
     val appConfig = repository.appConfig
     val currentMatch = repository.currentMatch
+    val waitingMatches = repository.waitingMatches
     val countdownValue = repository.countdownValue
     val remainingTimeSeconds = repository.remainingTimeSeconds
     val matchHistory = repository.matchHistory
@@ -24,6 +26,22 @@ class TapGameViewModel(
     val notifications = repository.notifications
     val supportTickets = repository.supportTickets
     val auditLogs = repository.auditLogs
+
+    private val _isDarkTheme = MutableStateFlow(true)
+    val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
+
+    private val _themeColor = MutableStateFlow(AppThemeColor.CYAN_NEON)
+    val themeColor: StateFlow<AppThemeColor> = _themeColor.asStateFlow()
+
+    fun setDarkTheme(enabled: Boolean) {
+        _isDarkTheme.value = enabled
+        showToast(if (enabled) "Switched to Dark Mode" else "Switched to Light Mode")
+    }
+
+    fun setThemeColor(color: AppThemeColor) {
+        _themeColor.value = color
+        showToast("Theme updated to ${color.title}")
+    }
 
     private val _userMessage = MutableSharedFlow<String>()
     val userMessage = _userMessage.asSharedFlow()
@@ -58,22 +76,42 @@ class TapGameViewModel(
     }
 
     fun login(email: String, pass: String, onSuccess: () -> Unit) {
-        val result = repository.login(email, pass)
-        result.onSuccess {
-            showToast("Welcome back, ${it.displayName}!")
-            onSuccess()
-        }.onFailure {
-            showToast(it.message ?: "Login failed")
+        viewModelScope.launch {
+            // Attempt Firebase Auth sign-in
+            com.example.data.auth.FirebaseAuthService.signInWithEmail(email, pass)
+            val result = repository.login(email, pass)
+            result.onSuccess {
+                showToast("Welcome back, ${it.displayName}!")
+                onSuccess()
+            }.onFailure {
+                showToast(it.message ?: "Login failed")
+            }
         }
     }
 
     fun register(name: String, email: String, pass: String, onSuccess: () -> Unit) {
-        val result = repository.register(name, email, pass)
-        result.onSuccess {
-            showToast("Account created! Assigned ID ${it.publicPlayerId}")
-            onSuccess()
-        }.onFailure {
-            showToast(it.message ?: "Registration failed")
+        viewModelScope.launch {
+            // Attempt Firebase Auth account creation
+            com.example.data.auth.FirebaseAuthService.signUpWithEmail(email, pass)
+            val result = repository.register(name, email, pass)
+            result.onSuccess {
+                showToast("Account created! Assigned ID ${it.publicPlayerId}")
+                onSuccess()
+            }.onFailure {
+                showToast(it.message ?: "Registration failed")
+            }
+        }
+    }
+
+    fun googleSignIn(email: String = "sahid50534@gmail.com", name: String = "Sahid", onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            val result = repository.googleSignIn(email, name)
+            result.onSuccess {
+                showToast("Google Sign-In verified! Welcome, ${it.displayName}")
+                onSuccess()
+            }.onFailure {
+                showToast(it.message ?: "Google sign-in failed")
+            }
         }
     }
 
@@ -82,6 +120,7 @@ class TapGameViewModel(
     }
 
     fun logout() {
+        com.example.data.auth.FirebaseAuthService.signOut()
         repository.logout()
         showToast("Signed out successfully.")
     }
@@ -120,12 +159,37 @@ class TapGameViewModel(
         res.onSuccess {
             onSuccess()
         }.onFailure {
+            showToast(it.message ?: "Unable to create match")
+        }
+    }
+
+    fun createCustomMatch(mode: GameMode, customFee: Double? = null, onSuccess: () -> Unit) {
+        val res = repository.createCustomMatch(mode, customFee)
+        res.onSuccess {
+            showToast("Match #${it.matchCode} created! Share this code with your opponent.")
+            onSuccess()
+        }.onFailure {
+            showToast(it.message ?: "Failed to create match")
+        }
+    }
+
+    fun searchMatchByCode(code: String, onResult: (Result<GameMatch>) -> Unit) {
+        val res = repository.searchMatchByCode(code)
+        onResult(res)
+    }
+
+    fun joinMatchByCode(code: String, onSuccess: () -> Unit) {
+        val res = repository.joinMatchByCode(code)
+        res.onSuccess {
+            showToast("Joined Match #${it.matchCode}! Preparing battle...")
+            onSuccess()
+        }.onFailure {
             showToast(it.message ?: "Unable to join match")
         }
     }
 
-    fun registerTap(): Boolean {
-        return repository.registerTap()
+    fun registerTap(forPlayer2: Boolean = false): Boolean {
+        return repository.registerTap(forPlayer2)
     }
 
     fun cancelMatchmaking(onSuccess: () -> Unit) {

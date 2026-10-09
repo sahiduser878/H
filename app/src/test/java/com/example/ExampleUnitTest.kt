@@ -14,6 +14,8 @@ class ExampleUnitTest {
     @Before
     fun setUp() {
         repository = TapGameRepository.getInstance()
+        // Ensure a known authenticated user is active for tests
+        repository.login("player123@tapgame.io", "password123")
     }
 
     @Test
@@ -24,30 +26,33 @@ class ExampleUnitTest {
         assertNotNull(user)
         assertEquals("Player123", user?.displayName)
         assertEquals("458736", user?.publicPlayerId)
-        assertEquals(1250.0, user!!.availableBalance, 0.01)
+        assertEquals(10.0, user!!.availableBalance, 0.01)
     }
 
     @Test
-    fun testUserRegistrationAssignsUniqueId() {
+    fun testUserRegistrationAssignsUniqueIdAndBonus() {
         val uniqueEmail = "player_${System.currentTimeMillis()}@tapgame.io"
         val result = repository.register("SpeedRunner", uniqueEmail, "password123")
         assertTrue(result.isSuccess)
         val user = result.getOrNull()
         assertNotNull(user)
         assertEquals("SpeedRunner", user!!.displayName)
-        assertEquals(1250.0, user.availableBalance, 0.01)
+        // Verified real ₹10 signup bonus credited
+        assertEquals(10.0, user.availableBalance, 0.01)
     }
 
     @Test
     fun testMatchmakingDeductsFeeAndRefundsOnCancel() {
+        // Log in as player with ₹10 to test ₹10 entry
+        repository.login("player123@tapgame.io", "password123")
         val user = repository.currentUser.value!!
         val initialBalance = user.availableBalance
 
-        val matchResult = repository.startMatchmaking(GameMode.NORMAL)
+        val matchResult = repository.startMatchmaking(GameMode.MICRO) // MICRO has ₹10 entry fee
         assertTrue(matchResult.isSuccess)
 
         val balanceAfterEntry = repository.currentUser.value!!.availableBalance
-        assertEquals(initialBalance - GameMode.NORMAL.entryFee, balanceAfterEntry, 0.01)
+        assertEquals(initialBalance - GameMode.MICRO.entryFee, balanceAfterEntry, 0.01)
 
         val cancelSuccess = repository.cancelMatchmaking()
         assertTrue(cancelSuccess)

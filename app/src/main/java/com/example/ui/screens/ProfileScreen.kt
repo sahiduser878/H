@@ -35,11 +35,12 @@ fun ProfileScreen(
     onNavigateToLeaderboard: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToHelp: () -> Unit,
-    onNavigateToWithdrawal: () -> Unit
+    onNavigateToWithdrawal: () -> Unit,
+    onLogout: () -> Unit = {}
 ) {
     val currentUser by viewModel.currentUser.collectAsState()
     val user = currentUser
-    val balance = user?.availableBalance ?: 1250.0
+    val balance = user?.availableBalance ?: 10.0
 
     var showEditDialog by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(user?.displayName ?: "Player123") }
@@ -228,6 +229,68 @@ fun ProfileScreen(
                     iconColor = Color(0xFF38BDF8),
                     onClick = onNavigateToHelp
                 )
+
+                // 6. LOGOUT Button (Prominent Transparent Glass Red)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.2.dp, NeonRed.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                        .clickable {
+                            viewModel.logout()
+                            onLogout()
+                        }
+                        .testTag("profile_logout_button"),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = NavySurface)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 13.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(NeonRed.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Logout,
+                                    contentDescription = "Logout",
+                                    tint = NeonRed,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Column {
+                                Text(
+                                    "Log Out",
+                                    color = NeonRed,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                                Text(
+                                    "Exit account session safely",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = NeonRed.copy(alpha = 0.7f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(96.dp))

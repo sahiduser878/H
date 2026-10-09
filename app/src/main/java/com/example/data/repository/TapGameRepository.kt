@@ -50,8 +50,10 @@ class TapGameRepository private constructor() {
     private val _auditLogs = MutableStateFlow<List<AdminAuditLog>>(emptyList())
     val auditLogs: StateFlow<List<AdminAuditLog>> = _auditLogs.asStateFlow()
 
+    private val _waitingMatches = MutableStateFlow<List<GameMatch>>(emptyList())
+    val waitingMatches: StateFlow<List<GameMatch>> = _waitingMatches.asStateFlow()
+
     private var matchJob: Job? = null
-    private var opponentTapJob: Job? = null
     private var tapCountInCurrentSecond = 0
     private var currentSecondMarker = 0L
 
@@ -67,11 +69,11 @@ class TapGameRepository private constructor() {
             displayName = "Player123",
             publicPlayerId = "458736",
             avatarSeed = "1",
-            availableBalance = 1250.0,
+            availableBalance = 10.0,
             pendingBalance = 0.0,
-            totalGames = 12,
-            matchesWon = 8,
-            totalEarnings = 720.0,
+            totalGames = 0,
+            matchesWon = 0,
+            totalEarnings = 0.0,
             isVerified = true,
             status = AccountStatus.ACTIVE,
             role = UserRole.USER
@@ -84,11 +86,11 @@ class TapGameRepository private constructor() {
             displayName = "NeonStriker",
             publicPlayerId = "882910",
             avatarSeed = "2",
-            availableBalance = 980.0,
+            availableBalance = 10.0,
             pendingBalance = 0.0,
-            totalGames = 15,
-            matchesWon = 9,
-            totalEarnings = 810.0,
+            totalGames = 0,
+            matchesWon = 0,
+            totalEarnings = 0.0,
             isVerified = true,
             status = AccountStatus.ACTIVE,
             role = UserRole.USER
@@ -103,9 +105,9 @@ class TapGameRepository private constructor() {
             avatarSeed = "3",
             availableBalance = 50000.0,
             pendingBalance = 0.0,
-            totalGames = 20,
-            matchesWon = 18,
-            totalEarnings = 1620.0,
+            totalGames = 0,
+            matchesWon = 0,
+            totalEarnings = 0.0,
             isVerified = true,
             status = AccountStatus.ACTIVE,
             role = UserRole.ADMIN
@@ -117,66 +119,23 @@ class TapGameRepository private constructor() {
         val seedTransactions = listOf(
             WalletTransaction(
                 userId = user1.id,
-                type = TransactionType.DEPOSIT,
-                amount = 500.0,
+                type = TransactionType.SIGNUP_BONUS,
+                amount = 10.0,
                 status = TransactionStatus.COMPLETED,
-                reference = "UPI Ref 9938210921",
-                timestamp = System.currentTimeMillis() - 86400000 * 2
-            ),
-            WalletTransaction(
-                userId = user1.id,
-                type = TransactionType.MATCH_PRIZE,
-                amount = 90.0,
-                status = TransactionStatus.COMPLETED,
-                reference = "Normal Mode Victory",
-                timestamp = System.currentTimeMillis() - 86400000
-            ),
-            WalletTransaction(
-                userId = user1.id,
-                type = TransactionType.MATCH_ENTRY,
-                amount = -50.0,
-                status = TransactionStatus.COMPLETED,
-                reference = "Normal Mode Entry",
-                timestamp = System.currentTimeMillis() - 86400000
+                reference = "₹10 Welcome Signup Bonus",
+                timestamp = System.currentTimeMillis()
             )
         )
         _transactions.value = seedTransactions
 
-        val seedMatches = listOf(
-            GameMatch(
-                id = "M8211",
-                mode = GameMode.NORMAL,
-                player1Id = user1.id,
-                player1Name = user1.displayName,
-                player1PlayerId = user1.publicPlayerId,
-                player1Avatar = user1.avatarSeed,
-                player2Id = "opp_771",
-                player2Name = "Opponent",
-                player2PlayerId = "771204",
-                player2Avatar = "2",
-                player1Score = 250,
-                player2Score = 176,
-                winnerId = user1.id,
-                status = MatchStatus.FINISHED,
-                entryFee = 50.0,
-                prizeAmount = 90.0,
-                timestamp = System.currentTimeMillis() - 86400000
-            )
-        )
-        _matchHistory.value = seedMatches
+        _matchHistory.value = emptyList()
 
         _notifications.value = listOf(
             AppNotification(
                 userId = user1.id,
                 title = "🎉 Welcome to TAP GAME!",
-                message = "Your wallet is loaded with ₹1,250. Ready to win big rewards?",
+                message = "₹10 Signup Bonus credited directly to your real wallet! Play ₹10 Micro Match instantly.",
                 type = NotificationType.SYSTEM
-            ),
-            AppNotification(
-                userId = user1.id,
-                title = "🏆 Victory Reward Credited!",
-                message = "You won ₹90.00 in Normal Mode! Funds added to your available balance.",
-                type = NotificationType.MATCH
             )
         )
     }
@@ -196,15 +155,16 @@ class TapGameRepository private constructor() {
                 Result.success(user)
             }
         } else {
-            // Auto register/create session for fast seamless experience
+            // New user registration on first login with ₹10 welcome bonus
             val publicId = "${Random.nextInt(100000, 999999)}"
+            val isEmail = trimmed.contains("@")
             val newUser = UserAccount(
-                email = if (trimmed.contains("@")) trimmed else "player_$publicId@tapgame.io",
-                mobileNumber = if (trimmed.all { it.isDigit() }) trimmed else "9876543210",
-                displayName = if (trimmed.contains("@")) trimmed.substringBefore("@") else "Player$publicId",
+                email = if (isEmail) trimmed else "player_$publicId@tapgame.io",
+                mobileNumber = if (!isEmail && trimmed.all { it.isDigit() }) trimmed else "9876543210",
+                displayName = if (isEmail) trimmed.substringBefore("@") else "Player$publicId",
                 publicPlayerId = publicId,
                 avatarSeed = "1",
-                availableBalance = 1250.0,
+                availableBalance = 10.0,
                 totalGames = 0,
                 matchesWon = 0,
                 totalEarnings = 0.0,
@@ -212,6 +172,23 @@ class TapGameRepository private constructor() {
             )
             _allUsers.value = _allUsers.value + newUser
             _currentUser.value = newUser
+
+            val bonusTx = WalletTransaction(
+                userId = newUser.id,
+                type = TransactionType.SIGNUP_BONUS,
+                amount = 10.0,
+                status = TransactionStatus.COMPLETED,
+                reference = "₹10 Welcome Signup Bonus"
+            )
+            _transactions.value = listOf(bonusTx) + _transactions.value
+
+            addNotification(
+                userId = newUser.id,
+                title = "🎁 ₹10 Signup Bonus Credited!",
+                message = "Welcome! Your ₹10 bonus is in your real wallet. Play ₹10 Micro Match now!",
+                type = NotificationType.SYSTEM
+            )
+
             Result.success(newUser)
         }
     }
@@ -219,13 +196,24 @@ class TapGameRepository private constructor() {
     fun register(name: String, mobileOrEmail: String, pass: String): Result<UserAccount> {
         val publicId = "${Random.nextInt(100000, 999999)}"
         val isEmail = mobileOrEmail.contains("@")
+        val clean = mobileOrEmail.trim()
+
+        val existing = _allUsers.value.find {
+            (isEmail && it.email.equals(clean, ignoreCase = true)) ||
+                    (!isEmail && it.mobileNumber.endsWith(clean.takeLast(10)))
+        }
+        if (existing != null) {
+            _currentUser.value = existing
+            return Result.success(existing)
+        }
+
         val newUser = UserAccount(
-            email = if (isEmail) mobileOrEmail.trim() else "player_$publicId@tapgame.io",
-            mobileNumber = if (!isEmail) mobileOrEmail.trim() else "9876543210",
-            displayName = name.trim().ifEmpty { "Player$publicId" },
+            email = if (isEmail) clean else "player_$publicId@tapgame.io",
+            mobileNumber = if (!isEmail) clean else "+91 9876543210",
+            displayName = name.trim().ifEmpty { if (isEmail) clean.substringBefore("@") else "Player$publicId" },
             publicPlayerId = publicId,
             avatarSeed = "1",
-            availableBalance = 1250.0,
+            availableBalance = 10.0,
             totalGames = 0,
             matchesWon = 0,
             totalEarnings = 0.0,
@@ -233,6 +221,66 @@ class TapGameRepository private constructor() {
         )
         _allUsers.value = _allUsers.value + newUser
         _currentUser.value = newUser
+
+        val bonusTx = WalletTransaction(
+            userId = newUser.id,
+            type = TransactionType.SIGNUP_BONUS,
+            amount = 10.0,
+            status = TransactionStatus.COMPLETED,
+            reference = "₹10 Welcome Signup Bonus"
+        )
+        _transactions.value = listOf(bonusTx) + _transactions.value
+
+        addNotification(
+            userId = newUser.id,
+            title = "🎁 ₹10 Signup Bonus Credited!",
+            message = "Welcome! Your ₹10 bonus is in your real wallet. Play ₹10 Micro Match now!",
+            type = NotificationType.SYSTEM
+        )
+
+        return Result.success(newUser)
+    }
+
+    fun googleSignIn(accountEmail: String = "sahid50534@gmail.com", accountName: String = "Sahid"): Result<UserAccount> {
+        val existing = _allUsers.value.find { it.email.equals(accountEmail.trim(), ignoreCase = true) }
+        if (existing != null) {
+            _currentUser.value = existing
+            return Result.success(existing)
+        }
+
+        val publicId = "${Random.nextInt(100000, 999999)}"
+        val newUser = UserAccount(
+            email = accountEmail.trim(),
+            mobileNumber = "+91 9876543210",
+            displayName = accountName.trim().ifEmpty { accountEmail.substringBefore("@") },
+            publicPlayerId = publicId,
+            avatarSeed = "2",
+            availableBalance = 10.0,
+            pendingBalance = 0.0,
+            totalGames = 0,
+            matchesWon = 0,
+            totalEarnings = 0.0,
+            isVerified = true
+        )
+        _allUsers.value = _allUsers.value + newUser
+        _currentUser.value = newUser
+
+        val bonusTx = WalletTransaction(
+            userId = newUser.id,
+            type = TransactionType.SIGNUP_BONUS,
+            amount = 10.0,
+            status = TransactionStatus.COMPLETED,
+            reference = "₹10 Google Sign-In Welcome Bonus"
+        )
+        _transactions.value = listOf(bonusTx) + _transactions.value
+
+        addNotification(
+            userId = newUser.id,
+            title = "🎁 ₹10 Google Sign-Up Bonus!",
+            message = "Signed in with Google! ₹10 bonus credited to your real wallet. Ready for 1v1 battles!",
+            type = NotificationType.SYSTEM
+        )
+
         return Result.success(newUser)
     }
 
@@ -334,65 +382,133 @@ class TapGameRepository private constructor() {
         return Result.success(req)
     }
 
-    fun startMatchmaking(mode: GameMode): Result<GameMatch> {
+    fun createCustomMatch(mode: GameMode, customFee: Double? = null): Result<GameMatch> {
         val user = _currentUser.value ?: return Result.failure(Exception("Not logged in"))
-        if (user.availableBalance < mode.entryFee) {
-            return Result.failure(Exception("Insufficient balance. Entry fee is ₹${"%.0f".format(mode.entryFee)}."))
+        val fee = customFee ?: mode.entryFee
+        val prize = customFee?.let { it * 1.8 } ?: mode.prizePool
+
+        if (user.status == AccountStatus.BANNED || user.status == AccountStatus.RESTRICTED) {
+            return Result.failure(Exception("Account is restricted from playing matches"))
         }
 
-        val updatedUser = user.copy(availableBalance = user.availableBalance - mode.entryFee)
+        if (user.availableBalance < fee) {
+            return Result.failure(Exception("Insufficient balance. Need ₹${fee.toInt()}, available is ₹${user.availableBalance.toInt()}"))
+        }
+
+        // Atomically reserve entry fee
+        val updatedUser = user.copy(availableBalance = user.availableBalance - fee)
         updateUserInternal(updatedUser)
 
         val tx = WalletTransaction(
             userId = user.id,
             type = TransactionType.MATCH_ENTRY,
-            amount = -mode.entryFee,
+            amount = -fee,
             status = TransactionStatus.COMPLETED,
             reference = "${mode.displayName} Entry Fee"
         )
         _transactions.value = listOf(tx) + _transactions.value
 
-        val oppNames = listOf("ThunderTap", "SpeedRider", "CyberNinja", "NeonFingers", "FlashKing")
-        val oppName = oppNames.random()
-        val oppId = "${Random.nextInt(100000, 999999)}"
-
+        val code = Random.nextInt(100000, 999999).toString()
         val match = GameMatch(
+            matchCode = code,
+            creatorId = user.id,
             mode = mode,
             player1Id = user.id,
             player1Name = user.displayName,
             player1PlayerId = user.publicPlayerId,
             player1Avatar = user.avatarSeed,
-            player2Id = "opp_$oppId",
-            player2Name = oppName,
-            player2PlayerId = oppId,
-            player2Avatar = "2",
+            player2Id = null,
+            player2Name = null,
+            player2PlayerId = null,
+            player2Avatar = null,
             player1Score = 0,
             player2Score = 0,
             status = MatchStatus.WAITING,
-            entryFee = mode.entryFee,
-            prizeAmount = mode.prizePool
+            entryFee = fee,
+            prizeAmount = prize
         )
+
         _currentMatch.value = match
+        _waitingMatches.value = listOf(match) + _waitingMatches.value.filter { it.id != match.id }
+        return Result.success(match)
+    }
 
-        // Matchmaking flow: 2 seconds waiting, then 5 seconds countdown, then live match
-        matchJob?.cancel()
-        matchJob = scope.launch {
-            delay(2000)
-            val foundMatch = _currentMatch.value?.copy(status = MatchStatus.COUNTDOWN)
-            if (foundMatch != null && foundMatch.status != MatchStatus.CANCELLED) {
-                _currentMatch.value = foundMatch
-                _countdownValue.value = 5
+    fun startMatchmaking(mode: GameMode): Result<GameMatch> {
+        return createCustomMatch(mode)
+    }
 
-                for (i in 5 downTo 1) {
-                    _countdownValue.value = i
-                    delay(1000)
-                }
-
-                startLiveMatch(foundMatch)
-            }
+    fun searchMatchByCode(code: String): Result<GameMatch> {
+        val trimmed = code.trim()
+        if (trimmed.length != 6) {
+            return Result.failure(Exception("Match ID must be 6 numeric digits"))
         }
 
-        return Result.success(match)
+        val found = _waitingMatches.value.find { it.matchCode == trimmed && it.status == MatchStatus.WAITING }
+            ?: if (_currentMatch.value?.matchCode == trimmed && _currentMatch.value?.status == MatchStatus.WAITING) _currentMatch.value else null
+
+        return if (found != null) {
+            Result.success(found)
+        } else {
+            Result.failure(Exception("No active waiting match found with ID #$trimmed"))
+        }
+    }
+
+    fun joinMatchByCode(code: String): Result<GameMatch> {
+        val user = _currentUser.value ?: return Result.failure(Exception("Not logged in"))
+        val searchRes = searchMatchByCode(code)
+        if (searchRes.isFailure) return searchRes
+
+        val match = searchRes.getOrNull() ?: return Result.failure(Exception("Match not found"))
+
+        if (match.status != MatchStatus.WAITING) {
+            return Result.failure(Exception("Match is already in progress or completed"))
+        }
+
+        if (match.creatorId == user.id) {
+            return Result.failure(Exception("You cannot join your own match. Share Match ID #${match.matchCode} with a real opponent!"))
+        }
+
+        if (user.availableBalance < match.entryFee) {
+            return Result.failure(Exception("Insufficient balance to join. Entry fee is ₹${match.entryFee.toInt()}, available is ₹${user.availableBalance.toInt()}"))
+        }
+
+        // Atomically reserve second player's entry fee
+        val updatedUser = user.copy(availableBalance = user.availableBalance - match.entryFee)
+        updateUserInternal(updatedUser)
+
+        val tx = WalletTransaction(
+            userId = user.id,
+            type = TransactionType.MATCH_ENTRY,
+            amount = -match.entryFee,
+            status = TransactionStatus.COMPLETED,
+            reference = "Match #${match.matchCode} Entry Fee"
+        )
+        _transactions.value = listOf(tx) + _transactions.value
+
+        // Lock match against other participants and set player 2 details
+        val joinedMatch = match.copy(
+            player2Id = user.id,
+            player2Name = user.displayName,
+            player2PlayerId = user.publicPlayerId,
+            player2Avatar = user.avatarSeed,
+            status = MatchStatus.COUNTDOWN
+        )
+
+        _currentMatch.value = joinedMatch
+        _waitingMatches.value = _waitingMatches.value.filter { it.matchCode != code }
+
+        // Start 5-second synchronized countdown, then live match
+        matchJob?.cancel()
+        matchJob = scope.launch {
+            _countdownValue.value = 5
+            for (i in 5 downTo 1) {
+                _countdownValue.value = i
+                delay(1000)
+            }
+            startLiveMatch(joinedMatch)
+        }
+
+        return Result.success(joinedMatch)
     }
 
     private fun startLiveMatch(match: GameMatch) {
@@ -401,20 +517,8 @@ class TapGameRepository private constructor() {
         val liveMatch = match.copy(status = MatchStatus.IN_PROGRESS, player1Score = 0, player2Score = 0)
         _currentMatch.value = liveMatch
 
-        opponentTapJob?.cancel()
-        opponentTapJob = scope.launch {
-            val endTime = System.currentTimeMillis() + (duration * 1000L)
-            while (System.currentTimeMillis() < endTime && _currentMatch.value?.status == MatchStatus.IN_PROGRESS) {
-                val delayMs = Random.nextLong(160, 280)
-                delay(delayMs)
-                val current = _currentMatch.value ?: break
-                if (current.status == MatchStatus.IN_PROGRESS) {
-                    _currentMatch.value = current.copy(player2Score = current.player2Score + 1)
-                }
-            }
-        }
-
-        scope.launch {
+        matchJob?.cancel()
+        matchJob = scope.launch {
             for (sec in duration downTo 1) {
                 _remainingTimeSeconds.value = sec
                 delay(1000)
@@ -425,20 +529,27 @@ class TapGameRepository private constructor() {
         }
     }
 
-    fun registerTap(): Boolean {
+    fun registerTap(isOpponentOrPlayer2: Boolean = false): Boolean {
         val match = _currentMatch.value ?: return false
         if (match.status != MatchStatus.IN_PROGRESS) return false
 
         val now = System.currentTimeMillis()
         if (now / 1000L == currentSecondMarker) {
             tapCountInCurrentSecond++
-            if (tapCountInCurrentSecond > 22) return false
+            if (tapCountInCurrentSecond > 22) return false // Anti-cheat rate limit
         } else {
             currentSecondMarker = now / 1000L
             tapCountInCurrentSecond = 1
         }
 
-        _currentMatch.value = match.copy(player1Score = match.player1Score + 1)
+        val currentUser = _currentUser.value
+        val isUserPlayer2 = currentUser != null && currentUser.id == match.player2Id
+
+        _currentMatch.value = if (isOpponentOrPlayer2 || isUserPlayer2) {
+            match.copy(player2Score = match.player2Score + 1)
+        } else {
+            match.copy(player1Score = match.player1Score + 1)
+        }
         return true
     }
 
@@ -447,10 +558,9 @@ class TapGameRepository private constructor() {
         if (match.status != MatchStatus.WAITING) return false
 
         matchJob?.cancel()
-        opponentTapJob?.cancel()
 
         val user = _currentUser.value
-        if (user != null) {
+        if (user != null && user.id == match.creatorId) {
             val updatedUser = user.copy(availableBalance = user.availableBalance + match.entryFee)
             updateUserInternal(updatedUser)
 
@@ -459,17 +569,17 @@ class TapGameRepository private constructor() {
                 type = TransactionType.REFUND,
                 amount = match.entryFee,
                 status = TransactionStatus.COMPLETED,
-                reference = "Refund: Match Cancelled"
+                reference = "Refund: Cancelled Match #${match.matchCode}"
             )
             _transactions.value = listOf(tx) + _transactions.value
         }
 
+        _waitingMatches.value = _waitingMatches.value.filter { it.id != match.id }
         _currentMatch.value = match.copy(status = MatchStatus.CANCELLED, refundIssued = true)
         return true
     }
 
     private fun finalizeMatch() {
-        opponentTapJob?.cancel()
         val match = _currentMatch.value ?: return
         if (match.status != MatchStatus.IN_PROGRESS) return
 
@@ -487,11 +597,11 @@ class TapGameRepository private constructor() {
         _matchHistory.value = listOf(finishedMatch) + _matchHistory.value
 
         val user = _currentUser.value
-        if (user != null && user.id == match.player1Id) {
-            val won = winnerId == user.id
-            val tied = winnerId == null
+        if (user != null && (user.id == match.player1Id || user.id == match.player2Id)) {
+            val isUserWinner = winnerId == user.id
+            val isTie = winnerId == null
 
-            if (won) {
+            if (isUserWinner) {
                 val updatedUser = user.copy(
                     availableBalance = user.availableBalance + match.prizeAmount,
                     totalGames = user.totalGames + 1,
@@ -509,13 +619,14 @@ class TapGameRepository private constructor() {
                 )
                 _transactions.value = listOf(prizeTx) + _transactions.value
 
+                val opponentName = if (user.id == match.player1Id) (match.player2Name ?: "Challenger") else match.player1Name
                 addNotification(
                     userId = user.id,
                     title = "🏆 WINNER! (+₹${"%.0f".format(match.prizeAmount)})",
-                    message = "Victory against ${match.player2Name} ($p1 vs $p2)! Prize credited.",
+                    message = "Victory against $opponentName ($p1 vs $p2)! Prize credited to your balance.",
                     type = NotificationType.MATCH
                 )
-            } else if (tied) {
+            } else if (isTie) {
                 val updatedUser = user.copy(
                     availableBalance = user.availableBalance + match.entryFee,
                     totalGames = user.totalGames + 1
@@ -527,7 +638,7 @@ class TapGameRepository private constructor() {
                     type = TransactionType.REFUND,
                     amount = match.entryFee,
                     status = TransactionStatus.COMPLETED,
-                    reference = "Tie Refund"
+                    reference = "Tie Refund #${match.matchCode}"
                 )
                 _transactions.value = listOf(refundTx) + _transactions.value
             } else {

@@ -23,7 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.DepositPaymentMethod
 import com.example.data.model.PayoutMethod
+import com.example.data.payment.ZapUpiPaymentGateway
 import com.example.ui.TapGameViewModel
+import com.example.ui.components.GlassmorphicButton
 import com.example.ui.components.NeonButton
 import com.example.ui.theme.*
 
@@ -266,24 +268,49 @@ fun DepositScreen(
                 }
             }
 
-            // Proceed to Pay Button
+            // Proceed to Pay Button via ZapUPI Gateway
             item {
                 Spacer(modifier = Modifier.height(10.dp))
-                NeonButton(
-                    text = "Proceed to Pay",
+                GlassmorphicButton(
+                    text = "Pay ₹$selectedAmount via ZapUPI",
                     onClick = {
                         val amount = selectedAmount.toDoubleOrNull() ?: 200.0
                         viewModel.submitDeposit(amount, selectedMethod) {
                             onBack()
                         }
                     },
-                    gradient = Brush.horizontalGradient(
-                        listOf(Color(0xFF0072FF), Color(0xFFFF2A85))
-                    ),
+                    accentGlow = NeonCyan,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("deposit_proceed_button")
                 )
+            }
+
+            // ZapUPI Gateway Security Banner
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, NeonCyan.copy(alpha = 0.3f), RoundedCornerShape(10.dp)),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = NavySurface.copy(alpha = 0.6f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Bolt, contentDescription = null, tint = NeonCyan, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Powered by ZapUPI Gateway • Key: zap7f9...cb7",
+                            color = NeonCyan,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
 
             // Footer
@@ -301,7 +328,7 @@ fun DepositScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Text("•", color = TextMuted)
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("⚡ Powered by Razorpay", color = TextSecondary, fontSize = 11.sp)
+                    Text("⚡ Powered by ZapUPI Gateway", color = NeonCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -546,7 +573,7 @@ fun WithdrawalScreen(
 
             // Request Withdrawal Button
             item {
-                NeonButton(
+                GlassmorphicButton(
                     text = "Request Withdrawal",
                     onClick = {
                         val amt = amountText.toDoubleOrNull() ?: 100.0
@@ -554,9 +581,7 @@ fun WithdrawalScreen(
                             onBack()
                         }
                     },
-                    gradient = Brush.horizontalGradient(
-                        listOf(Color(0xFF0072FF), Color(0xFFFF2A85))
-                    ),
+                    accentGlow = NeonMagenta,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("withdraw_request_button")
