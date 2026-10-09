@@ -1,0 +1,6 @@
+{
+  "name": "Tap Game: Tap & Win",
+  "description": "Fast-paced real-time 1v1 tapping battle game with live multiplayer matchmaking, wallet ledger, leaderboards, and tournament modes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
